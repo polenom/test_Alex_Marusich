@@ -5,7 +5,7 @@ import aiohttp
 import validators
 from aiohttp import ClientConnectorError, ClientSession, ServerTimeoutError
 
-data = []
+METHODS = ['get', 'post', 'options', 'put', 'patch', 'delete']
 
 
 def io_operation_input() -> list[str]:
@@ -22,15 +22,18 @@ def io_operation_input() -> list[str]:
 
 
 async def get_methods(url: str, result: dict) -> None:
-    methods = ['get', 'post', 'options', 'put', 'patch', 'delete']
-    try:
-        async with aiohttp.ClientSession() as session:
-            for method in methods:
-                async with getattr(session, method)(url, timeout=10) as resp:
-                    if resp.status != 405:
-                        result[method.upper()] = resp.status
-    except (ClientConnectorError, asyncio.TimeoutError):
-        pass
+    async with aiohttp.ClientSession() as session:
+        try:
+            await request(session, url, result)
+        except (ClientConnectorError, asyncio.TimeoutError):
+            pass
+
+
+async def request(session: ClientSession, url: str, result: dict) -> None:
+    for method in METHODS:
+        async with getattr(session, method)(url, timeout=10) as resp:
+            if resp.status != 405:
+                result[method.upper()] = resp.status
 
 
 def check_url(urls: list[str]) -> dict:
